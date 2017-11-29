@@ -12,8 +12,11 @@ import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.util.Set;
 import java.util.UUID;
 
@@ -22,12 +25,14 @@ import static android.content.ContentValues.TAG;
 public class MainActivity extends AppCompatActivity {
     private final static int REQUEST_ENABLE_BT = 1;
     private BluetoothAdapter mBluetoothAdapter;
+    private BluetoothDevice deviceDiscovered;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        Log.e("My Tag?", "Can I see this on the computer?");
         if (mBluetoothAdapter == null) {
             System.out.println("Device does not support Bluetooth");
         }
@@ -54,6 +59,25 @@ public class MainActivity extends AppCompatActivity {
                     new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
             discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
             startActivity(discoverableIntent);
+
+            final Button serverButton = findViewById(R.id.button2);
+            final Button clientButton = findViewById(R.id.button3);
+
+            serverButton.setOnClickListener(new View.OnClickListener(){
+                public void onClick(View v){
+                    Log.e("Printing", "Server Button Pressed");
+                    AcceptThread at = new AcceptThread();
+                    at.start();
+                }
+            });
+
+            clientButton.setOnClickListener(new View.OnClickListener(){
+                public void onClick(View v){
+                    Log.e("Printing", "Client Button Pressed");
+                    ConnectThread ct = new ConnectThread(deviceDiscovered);
+                    ct.start();
+                }
+            });
         }
     }
 
@@ -67,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 String deviceName = device.getName();
                 String deviceHardwareAddress = device.getAddress(); // MAC address
+                deviceDiscovered = device;
             }
         }
     };
@@ -108,7 +133,11 @@ public class MainActivity extends AppCompatActivity {
                     // A connection was accepted. Perform work associated with
                     // the connection in a separate thread.
                     manageMyConnectedSocket(socket);
-                    mmServerSocket.close();
+                    try {
+                        mmServerSocket.close();
+                    } catch (IOException e) {
+                        Log.e(TAG, "failed to close server socket", e);
+                    }
                     break;
                 }
             }
@@ -121,6 +150,15 @@ public class MainActivity extends AppCompatActivity {
             } catch (IOException e) {
                 Log.e(TAG, "Could not close the connect socket", e);
             }
+        }
+
+        public void manageMyConnectedSocket(final BluetoothSocket connectedSocket){
+            Thread t = new Thread( new Runnable(){
+                @Override
+                public void run() {
+                    Log.e("Printing", connectedSocket.getRemoteDevice().getName());
+                }
+            });
         }
     }
 
@@ -174,6 +212,15 @@ public class MainActivity extends AppCompatActivity {
             } catch (IOException e) {
                 Log.e(TAG, "Could not close the client socket", e);
             }
+        }
+
+        public void manageMyConnectedSocket(final BluetoothSocket connectedSocket){
+            Thread t = new Thread( new Runnable(){
+                @Override
+                public void run() {
+                    Log.e("Printing", connectedSocket.getRemoteDevice().getName());
+                }
+            });
         }
     }
 
