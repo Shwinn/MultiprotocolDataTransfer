@@ -78,6 +78,9 @@ public class MainActivity extends AppCompatActivity {
                     ct.start();
                 }
             });
+
+            mBluetoothAdapter.startDiscovery();
+            Log.e(TAG, "started device discovery");
         }
     }
 
@@ -91,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 String deviceName = device.getName();
                 String deviceHardwareAddress = device.getAddress(); // MAC address
+                Log.e(TAG, "Device Name: " + deviceName + " Device Hardware Address: " + deviceHardwareAddress);
                 deviceDiscovered = device;
             }
         }
@@ -111,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
             BluetoothServerSocket tmp = null;
             try {
                 // MY_UUID is the app's UUID string, also used by the client code.
-                tmp = mBluetoothAdapter.listenUsingRfcommWithServiceRecord("Bluetooth Test", UUID.fromString("test"));
+                tmp = mBluetoothAdapter.listenUsingRfcommWithServiceRecord("Bluetooth Test", UUID.fromString("00000000-0000-1000-8000-00805F9B34FB"));
             } catch (IOException e) {
                 Log.e(TAG, "Socket's listen() method failed", e);
             }
@@ -123,7 +127,9 @@ public class MainActivity extends AppCompatActivity {
             // Keep listening until exception occurs or a socket is returned.
             while (true) {
                 try {
+                    Log.e(TAG, "Trying to accept the Client Socket");
                     socket = mmServerSocket.accept();
+                    Log.e(TAG, "Accepted the Client Socket");
                 } catch (IOException e) {
                     Log.e(TAG, "Socket's accept() method failed", e);
                     break;
@@ -175,7 +181,7 @@ public class MainActivity extends AppCompatActivity {
             try {
                 // Get a BluetoothSocket to connect with the given BluetoothDevice.
                 // MY_UUID is the app's UUID string, also used in the server code.
-                tmp = device.createRfcommSocketToServiceRecord(UUID.fromString("test"));
+                tmp = device.createRfcommSocketToServiceRecord(UUID.fromString("00000000-0000-1000-8000-00805F9B34FB"));
             } catch (IOException e) {
                 Log.e(TAG, "Socket's create() method failed", e);
             }
