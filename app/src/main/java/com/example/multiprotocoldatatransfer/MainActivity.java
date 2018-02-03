@@ -32,7 +32,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        Log.e("My Tag?", "Can I see this on the computer?");
+        Log.e("Printing", "Can I see this on the computer?");
         if (mBluetoothAdapter == null) {
             System.out.println("Device does not support Bluetooth");
         }
@@ -48,7 +48,8 @@ public class MainActivity extends AppCompatActivity {
                 for (BluetoothDevice device : pairedDevices) {
                     String deviceName = device.getName();
                     String deviceHardwareAddress = device.getAddress(); // MAC address
-                    System.out.println("Device Name: " + deviceName + " ; Device Hardware Address: " + deviceHardwareAddress);
+                    Log.e("Printing", "ALREADY A PAIRED DEVICE");
+                    Log.e("Printing", "Device Name: " + deviceName + " ; Device Hardware Address: " + deviceHardwareAddress);
                 }
             }
 
@@ -80,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
             });
 
             mBluetoothAdapter.startDiscovery();
-            Log.e(TAG, "started device discovery");
+            Log.e("Printing", "started device discovery");
         }
     }
 
@@ -94,7 +95,8 @@ public class MainActivity extends AppCompatActivity {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 String deviceName = device.getName();
                 String deviceHardwareAddress = device.getAddress(); // MAC address
-                Log.e(TAG, "Device Name: " + deviceName + " Device Hardware Address: " + deviceHardwareAddress);
+                Log.e("Printing", "BROADCAST RECEIVER DISCOVERED A DEVICE");
+                Log.e("Printing", "Device Name: " + deviceName + " Device Hardware Address: " + deviceHardwareAddress);
                 deviceDiscovered = device;
             }
         }
@@ -117,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
                 // MY_UUID is the app's UUID string, also used by the client code.
                 tmp = mBluetoothAdapter.listenUsingRfcommWithServiceRecord("Bluetooth Test", UUID.fromString("00000000-0000-1000-8000-00805F9B34FB"));
             } catch (IOException e) {
-                Log.e(TAG, "Socket's listen() method failed", e);
+                Log.e("Printing", "Socket's listen() method failed", e);
             }
             mmServerSocket = tmp;
         }
@@ -127,11 +129,11 @@ public class MainActivity extends AppCompatActivity {
             // Keep listening until exception occurs or a socket is returned.
             while (true) {
                 try {
-                    Log.e(TAG, "Trying to accept the Client Socket");
+                    Log.e("Printing", "Trying to accept the Client Socket");
                     socket = mmServerSocket.accept();
-                    Log.e(TAG, "Accepted the Client Socket");
+                    Log.e("Printing", "Accepted the Client Socket");
                 } catch (IOException e) {
-                    Log.e(TAG, "Socket's accept() method failed", e);
+                    Log.e("Printing", "Socket's accept() method failed", e);
                     break;
                 }
 
@@ -142,7 +144,7 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         mmServerSocket.close();
                     } catch (IOException e) {
-                        Log.e(TAG, "failed to close server socket", e);
+                        Log.e("Printing", "failed to close server socket", e);
                     }
                     break;
                 }
@@ -154,7 +156,7 @@ public class MainActivity extends AppCompatActivity {
             try {
                 mmServerSocket.close();
             } catch (IOException e) {
-                Log.e(TAG, "Could not close the connect socket", e);
+                Log.e("Printing", "Could not close the connect socket", e);
             }
         }
 
