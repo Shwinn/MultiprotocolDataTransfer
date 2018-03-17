@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
@@ -22,6 +23,7 @@ import android.widget.TextView;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.ref.WeakReference;
 import java.net.Socket;
 import java.util.Set;
 import java.util.UUID;
@@ -34,7 +36,11 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothDevice deviceDiscovered;
     private ConnectedThread deviceConnection = new ConnectedThread();
 
-    //final TextView chat = findViewById(R.id.textView);
+    private Button serverButton;
+    private Button clientButton;
+    private Button sendButton;
+    private EditText typedMessage;
+    private TextView chat;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,10 +81,14 @@ public class MainActivity extends AppCompatActivity {
             discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
             startActivity(discoverableIntent);
 
-            final Button serverButton = findViewById(R.id.button2);
-            final Button clientButton = findViewById(R.id.button3);
-            final Button sendButton = findViewById(R.id.button);
-            final EditText typedMessage = findViewById(R.id.editText);
+            setContentView(R.layout.activity_main);
+            serverButton = findViewById(R.id.button2);
+            clientButton = findViewById(R.id.button3);
+            sendButton = findViewById(R.id.button);
+            typedMessage = findViewById(R.id.editText);
+            chat = findViewById(R.id.textView);
+
+            chat.append("\n");
 
             serverButton.setOnClickListener(new View.OnClickListener(){
                 public void onClick(View v){
@@ -102,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
                     String message = typedMessage.getText().toString();
                     Log.e("Printing", "Writing message from Text Box");
                     deviceConnection.write(message.getBytes());
-                    //chat.setText(chat.getText() + "\nSent: " + message);
+                    chat.append("Sent: " + message + "\n");
                 }
             });
 
@@ -270,7 +280,20 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private Handler mHandler; // handler that gets info from Bluetooth service
+    static class IncomingHandler extends Handler{
+        private final WeakReference<MainActivity> mainActivityWeakReference;
+
+        public IncomingHandler(MainActivity reference){
+            mainActivityWeakReference = new WeakReference<MainActivity>(reference);
+        }
+        public void handleMessage(Message msg){
+            MainActivity mainActivity = mainActivityWeakReference.get();
+            if(mainActivity != null){
+
+            }
+        }
+    };
+
 
     // Defines several constants used when transmitting messages between the
     // service and the UI.
@@ -327,15 +350,23 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     // Read from the InputStream.
                     numBytes = mmInStream.read(mmBuffer);
-                    String readMessage = new String(mmBuffer, 0, numBytes);
+                    final String readMessage = new String(mmBuffer, 0, numBytes);
                     Log.e("Printing", readMessage);
                     //chat.setText(chat.getText() + "\nReceived: " + readMessage);        // Should be sending message to UI Thread and updating there
+                    //final TextView otherReferenceTextView = findViewById(R.id.textView);
+                    //otherReferenceTextView.append("Received: " + readMessage + "\n");
                     // Send the obtained bytes to the UI activity.
 //                    Message readMsg = mHandler.obtainMessage(
 //                            MessageConstants.MESSAGE_READ, numBytes, -1,
 //                            mmBuffer);
-//                    Log.e("Printing", "After read creation of message");
-//                    readMsg.sendToTarget();
+                    Log.e("Printing", "After read creation of message");
+                    chat.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            chat.append("Received: " + readMessage + "\n");
+                        }
+                    });
+                    //readMsg.sendToTarget();
                     Log.e("Printing", "After read sendToTarget");
                 } catch (IOException e) {
                     Log.d(TAG, "Input stream was disconnected", e);
@@ -361,13 +392,13 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("Printing", "Error occurred when sending data", e);
 
                 // Send a failure message back to the activity.
-                Message writeErrorMsg =
-                        mHandler.obtainMessage(MessageConstants.MESSAGE_TOAST);
+                //Message writeErrorMsg =
+                //        mHandler.obtainMessage(MessageConstants.MESSAGE_TOAST);
                 Bundle bundle = new Bundle();
                 bundle.putString("toast",
                         "Couldn't send data to the other device");
-                writeErrorMsg.setData(bundle);
-                mHandler.sendMessage(writeErrorMsg);
+                //writeErrorMsg.setData(bundle);
+               // mHandler.sendMessage(writeErrorMsg);
             }
         }
 
