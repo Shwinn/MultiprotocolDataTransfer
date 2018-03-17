@@ -47,7 +47,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        Log.e("Printing", "Can I see this on the computer?");
         if (mBluetoothAdapter == null) {
             System.out.println("Device does not support Bluetooth");
         }
@@ -108,16 +107,14 @@ public class MainActivity extends AppCompatActivity {
 
             sendButton.setOnClickListener(new View.OnClickListener(){
                 public void onClick(View v){
-                    Log.e("Printing", "Send Button Pressed");
                     String message = typedMessage.getText().toString();
-                    Log.e("Printing", "Writing message from Text Box");
                     deviceConnection.write(message.getBytes());
                     chat.append("Sent: " + message + "\n");
                 }
             });
 
             mBluetoothAdapter.startDiscovery();
-            Log.e("Printing", "started device discovery");
+            Log.e("Printing", "Started device discovery");
         }
     }
 
@@ -133,7 +130,6 @@ public class MainActivity extends AppCompatActivity {
                 String deviceHardwareAddress = device.getAddress(); // MAC address
                 Log.e("Printing", "BROADCAST RECEIVER DISCOVERED A DEVICE");
                 Log.e("Printing", "Device Name: " + deviceName + " Device Hardware Address: " + deviceHardwareAddress);
-                //deviceDiscovered = device;
             }
         }
     };
@@ -165,9 +161,8 @@ public class MainActivity extends AppCompatActivity {
             // Keep listening until exception occurs or a socket is returned.
             while (true) {
                 try {
-                    Log.e("Printing", "Trying to accept the Client Socket");
                     socket = mmServerSocket.accept();
-                    Log.e("Printing", "Accepted the Client Socket");
+                    Log.e("Printing", "Successfully Accepted the Client Socket");
                 } catch (IOException e) {
                     Log.e("Printing", "Socket's accept() method failed", e);
                     break;
@@ -197,16 +192,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         public void manageMyConnectedSocket(final BluetoothSocket connectedSocket){
-//            Thread t = new Thread( new Runnable(){
-//                @Override
-//                public void run() {
-//                    Log.e("Printing", connectedSocket.getRemoteDevice().getName());
-//                }
-//            });
-//            t.start();
             deviceConnection = new ConnectedThread(connectedSocket);
             deviceConnection.start();
-            deviceConnection.write("test message".getBytes());
         }
     }
 
@@ -224,13 +211,10 @@ public class MainActivity extends AppCompatActivity {
                 // Get a BluetoothSocket to connect with the given BluetoothDevice.
                 // MY_UUID is the app's UUID string, also used in the server code.
                 tmp = device.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"));
-                Log.e("Printing", device.getName());
-                Log.e("Printing", device.toString());
             } catch (IOException e) {
                 Log.e("Printing", "Socket's create() method failed", e);
             }
             mmSocket = tmp;
-            Log.e("Printing", "Got Server Socket");
         }
 
         public void run() {
@@ -240,7 +224,6 @@ public class MainActivity extends AppCompatActivity {
             try {
                 // Connect to the remote device through the socket. This call blocks
                 // until it succeeds or throws an exception.
-                Log.e("Printing", "Trying to connect to server");
                 mmSocket.connect();
                 Log.e("Printing", "Successfully connected to server");
             } catch (IOException connectException) {
@@ -268,41 +251,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
         public void manageMyConnectedSocket(final BluetoothSocket connectedSocket){
-//            Thread t = new Thread( new Runnable(){
-//                @Override
-//                public void run() {
-//                    Log.e("Printing", connectedSocket.getRemoteDevice().getName());
-//                }
-//            });
-//            t.start();
             deviceConnection = new ConnectedThread(connectedSocket);
             deviceConnection.start();
         }
-    }
-
-    static class IncomingHandler extends Handler{
-        private final WeakReference<MainActivity> mainActivityWeakReference;
-
-        public IncomingHandler(MainActivity reference){
-            mainActivityWeakReference = new WeakReference<MainActivity>(reference);
-        }
-        public void handleMessage(Message msg){
-            MainActivity mainActivity = mainActivityWeakReference.get();
-            if(mainActivity != null){
-
-            }
-        }
-    };
-
-
-    // Defines several constants used when transmitting messages between the
-    // service and the UI.
-    private interface MessageConstants {
-        public static final int MESSAGE_READ = 0;
-        public static final int MESSAGE_WRITE = 1;
-        public static final int MESSAGE_TOAST = 2;
-
-        // ... (Add other message types here as needed.)
     }
 
     private class ConnectedThread extends Thread {
@@ -337,7 +288,6 @@ public class MainActivity extends AppCompatActivity {
 
             mmInStream = tmpIn;
             mmOutStream = tmpOut;
-            Log.e("Printing", "Finished creating input and output streams");
         }
 
         public void run() {
@@ -345,29 +295,19 @@ public class MainActivity extends AppCompatActivity {
             int numBytes; // bytes returned from read()
 
             // Keep listening to the InputStream until an exception occurs.
-            Log.e("Printing", "Start Looking for Incoming Messages");
+            Log.e("Printing", "Started Looking for Incoming Messages");
             while (true) {
                 try {
                     // Read from the InputStream.
                     numBytes = mmInStream.read(mmBuffer);
                     final String readMessage = new String(mmBuffer, 0, numBytes);
-                    Log.e("Printing", readMessage);
-                    //chat.setText(chat.getText() + "\nReceived: " + readMessage);        // Should be sending message to UI Thread and updating there
-                    //final TextView otherReferenceTextView = findViewById(R.id.textView);
-                    //otherReferenceTextView.append("Received: " + readMessage + "\n");
-                    // Send the obtained bytes to the UI activity.
-//                    Message readMsg = mHandler.obtainMessage(
-//                            MessageConstants.MESSAGE_READ, numBytes, -1,
-//                            mmBuffer);
-                    Log.e("Printing", "After read creation of message");
+                    Log.e("Printing", "Received: " + readMessage);
                     chat.post(new Runnable() {
                         @Override
                         public void run() {
                             chat.append("Received: " + readMessage + "\n");
                         }
                     });
-                    //readMsg.sendToTarget();
-                    Log.e("Printing", "After read sendToTarget");
                 } catch (IOException e) {
                     Log.d(TAG, "Input stream was disconnected", e);
                     break;
@@ -377,28 +317,11 @@ public class MainActivity extends AppCompatActivity {
 
         // Call this from the main activity to send data to the remote device.
         public void write(byte[] bytes) {
-            Log.e("Printing", "Start Writing Message");
             try {
                 mmOutStream.write(bytes);
-                Log.e("Printing", "Wrote " + new String(bytes, 0, bytes.length));
-
-                // Share the sent message with the UI activity.
-//                Message writtenMsg = mHandler.obtainMessage(
-//                        MessageConstants.MESSAGE_WRITE, -1, -1, mmBuffer);
-//                Log.e("Printing", "After write message creation");
-//                writtenMsg.sendToTarget();
-                Log.e("Printing", "After write message sendToTarget");
+                Log.e("Printing", "Sent: " + new String(bytes, 0, bytes.length));
             } catch (IOException e) {
                 Log.e("Printing", "Error occurred when sending data", e);
-
-                // Send a failure message back to the activity.
-                //Message writeErrorMsg =
-                //        mHandler.obtainMessage(MessageConstants.MESSAGE_TOAST);
-                Bundle bundle = new Bundle();
-                bundle.putString("toast",
-                        "Couldn't send data to the other device");
-                //writeErrorMsg.setData(bundle);
-               // mHandler.sendMessage(writeErrorMsg);
             }
         }
 
@@ -411,5 +334,4 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
 }
