@@ -32,15 +32,15 @@ import static android.content.ContentValues.TAG;
 
 public class MainActivity extends AppCompatActivity {
     private final static int REQUEST_ENABLE_BT = 1;
-    private BluetoothAdapter mBluetoothAdapter;
+    protected static BluetoothAdapter mBluetoothAdapter;
     private BluetoothDevice deviceDiscovered;
-    private ConnectedThread deviceConnection = new ConnectedThread();
+    protected static ConnectedThread deviceConnection = new ConnectedThread();
 
     private Button serverButton;
     private Button clientButton;
     private Button sendButton;
     private EditText typedMessage;
-    private TextView chat;
+    protected static TextView chat;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -138,200 +138,5 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
 
         unregisterReceiver(mReceiver);
-    }
-
-    private class AcceptThread extends Thread {
-        private final BluetoothServerSocket mmServerSocket;
-
-        public AcceptThread() {
-            // Use a temporary object that is later assigned to mmServerSocket
-            // because mmServerSocket is final.
-            BluetoothServerSocket tmp = null;
-            try {
-                // MY_UUID is the app's UUID string, also used by the client code.
-                tmp = mBluetoothAdapter.listenUsingRfcommWithServiceRecord("Bluetooth Test", UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"));
-            } catch (IOException e) {
-                Log.e("Printing", "Socket's listen() method failed", e);
-            }
-            mmServerSocket = tmp;
-        }
-
-        public void run() {
-            BluetoothSocket socket = null;
-            // Keep listening until exception occurs or a socket is returned.
-            while (true) {
-                try {
-                    socket = mmServerSocket.accept();
-                    Log.e("Printing", "Successfully Accepted the Client Socket");
-                } catch (IOException e) {
-                    Log.e("Printing", "Socket's accept() method failed", e);
-                    break;
-                }
-
-                if (socket != null) {
-                    // A connection was accepted. Perform work associated with
-                    // the connection in a separate thread.
-                    manageMyConnectedSocket(socket);
-                    try {
-                        mmServerSocket.close();
-                    } catch (IOException e) {
-                        Log.e("Printing", "failed to close server socket", e);
-                    }
-                    break;
-                }
-            }
-        }
-
-        // Closes the connect socket and causes the thread to finish.
-        public void cancel() {
-            try {
-                mmServerSocket.close();
-            } catch (IOException e) {
-                Log.e("Printing", "Could not close the connect socket", e);
-            }
-        }
-
-        public void manageMyConnectedSocket(final BluetoothSocket connectedSocket){
-            deviceConnection = new ConnectedThread(connectedSocket);
-            deviceConnection.start();
-        }
-    }
-
-    private class ConnectThread extends Thread {
-        private final BluetoothSocket mmSocket;
-        private final BluetoothDevice mmDevice;
-
-        public ConnectThread(BluetoothDevice device) {
-            // Use a temporary object that is later assigned to mmSocket
-            // because mmSocket is final.
-            BluetoothSocket tmp = null;
-            mmDevice = device;
-
-            try {
-                // Get a BluetoothSocket to connect with the given BluetoothDevice.
-                // MY_UUID is the app's UUID string, also used in the server code.
-                tmp = device.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"));
-            } catch (IOException e) {
-                Log.e("Printing", "Socket's create() method failed", e);
-            }
-            mmSocket = tmp;
-        }
-
-        public void run() {
-            // Cancel discovery because it otherwise slows down the connection.
-            mBluetoothAdapter.cancelDiscovery();
-
-            try {
-                // Connect to the remote device through the socket. This call blocks
-                // until it succeeds or throws an exception.
-                mmSocket.connect();
-                Log.e("Printing", "Successfully connected to server");
-            } catch (IOException connectException) {
-                // Unable to connect; close the socket and return.
-                try {
-                    mmSocket.close();
-                } catch (IOException closeException) {
-                    Log.e(TAG, "Could not close the client socket", closeException);
-                }
-                return;
-            }
-
-            // The connection attempt succeeded. Perform work associated with
-            // the connection in a separate thread.
-            manageMyConnectedSocket(mmSocket);
-        }
-
-        // Closes the client socket and causes the thread to finish.
-        public void cancel() {
-            try {
-                mmSocket.close();
-            } catch (IOException e) {
-                Log.e(TAG, "Could not close the client socket", e);
-            }
-        }
-
-        public void manageMyConnectedSocket(final BluetoothSocket connectedSocket){
-            deviceConnection = new ConnectedThread(connectedSocket);
-            deviceConnection.start();
-        }
-    }
-
-    private class ConnectedThread extends Thread {
-        private final BluetoothSocket mmSocket;
-        private final InputStream mmInStream;
-        private final OutputStream mmOutStream;
-        private byte[] mmBuffer; // mmBuffer store for the stream
-
-        public ConnectedThread(){
-            mmSocket = null;
-            mmInStream = null;
-            mmOutStream = null;
-        }
-
-        public ConnectedThread(BluetoothSocket socket) {
-            mmSocket = socket;
-            InputStream tmpIn = null;
-            OutputStream tmpOut = null;
-
-            // Get the input and output streams; using temp objects because
-            // member streams are final.
-            try {
-                tmpIn = socket.getInputStream();
-            } catch (IOException e) {
-                Log.e("Printing", "Error occurred when creating input stream", e);
-            }
-            try {
-                tmpOut = socket.getOutputStream();
-            } catch (IOException e) {
-                Log.e("Printing", "Error occurred when creating output stream", e);
-            }
-
-            mmInStream = tmpIn;
-            mmOutStream = tmpOut;
-        }
-
-        public void run() {
-            mmBuffer = new byte[1024];
-            int numBytes; // bytes returned from read()
-
-            // Keep listening to the InputStream until an exception occurs.
-            Log.e("Printing", "Started Looking for Incoming Messages");
-            while (true) {
-                try {
-                    // Read from the InputStream.
-                    numBytes = mmInStream.read(mmBuffer);
-                    final String readMessage = new String(mmBuffer, 0, numBytes);
-                    Log.e("Printing", "Received: " + readMessage);
-                    chat.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            chat.append("Received: " + readMessage + "\n");
-                        }
-                    });
-                } catch (IOException e) {
-                    Log.d(TAG, "Input stream was disconnected", e);
-                    break;
-                }
-            }
-        }
-
-        // Call this from the main activity to send data to the remote device.
-        public void write(byte[] bytes) {
-            try {
-                mmOutStream.write(bytes);
-                Log.e("Printing", "Sent: " + new String(bytes, 0, bytes.length));
-            } catch (IOException e) {
-                Log.e("Printing", "Error occurred when sending data", e);
-            }
-        }
-
-        // Call this method from the main activity to shut down the connection.
-        public void cancel() {
-            try {
-                mmSocket.close();
-            } catch (IOException e) {
-                Log.e(TAG, "Could not close the connect socket", e);
-            }
-        }
     }
 }
